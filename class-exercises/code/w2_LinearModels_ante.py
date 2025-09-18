@@ -47,7 +47,8 @@ def est_ols( y: np.ndarray, x: np.ndarray) -> np.ndarray:
     Returns:
         np.array: Estimated beta hats.
     """
-    return   # Fill in
+    b_estimate = np.linalg.inv(x.T@x)@x.T@y
+    return b_estimate
 
 def variance( 
         transform: str, 
