@@ -23,21 +23,22 @@ def estimate(y: np.ndarray, x: np.ndarray, transform='', N=None, T=None) -> dict
         dict: A dictionary with the results from the ols-estimation.
     """
     
-    b_hat = None # Fill in
-    resid = None # Fill in
-    SSR = None # Fill in
-    SST = None # Fill in
-    R2 = None # Fill in
+    b_hat = np.linalg.inv(x.T@x)@x.T@y # Fill in
+    resid = y - x@b_hat # Fill in
+    SSR = resid.T@resid # Fill in
+    y_mean = np.full((len(y),1), np.mean(y))
+    SST = y.T@y - y.T@y_mean # Fill in
+    R2 = 1-SSR/SST
 
     sigma, cov, se = variance(transform, SSR, x, N, T)
-    t_values =  None # Fill in
+    t_values =  b_hat/se
     
     names = ['b_hat', 'se', 'sigma', 't_values', 'R2', 'cov']
     results = [b_hat, se, sigma, t_values, R2, cov]
     return dict(zip(names, results))
 
     
-def est_ols( y: np.ndarray, x: np.ndarray) -> np.ndarray:
+def est_ols(y: np.ndarray, x: np.ndarray) -> np.ndarray:
     """Estimates OLS using input arguments.
 
     Args:
@@ -47,6 +48,7 @@ def est_ols( y: np.ndarray, x: np.ndarray) -> np.ndarray:
     Returns:
         np.array: Estimated beta hats.
     """
+
     b_estimate = np.linalg.inv(x.T@x)@x.T@y
     return b_estimate
 
@@ -79,16 +81,16 @@ def variance(
     K=x.shape[1]
 
     if transform in ('', 're', 'fd'):
-          sigma = None # Fill in
+          sigma = SSR/(N*T - K)
     elif transform.lower() == 'fe':
-          sigma = None # Fill in
+          sigma = SSR/(N*(T-1) - K)
     elif transform.lower() in ('be'): 
-          sigma = None # Fill in
+          sigma = SSR/(N - K)
     else:
         raise Exception('Invalid transform provided.')
-    
-    cov =  None # Fill in
-    se =  None # Fill in
+    # calculate covariance
+    cov = sigma*la.inv(x.T@x)
+    se = np.sqrt(np.diag(cov)).reshape(-1,1).flatten()
     return sigma, cov, se
 
 
@@ -156,9 +158,9 @@ def perm( Q_T: np.ndarray, A: np.ndarray, t=0) -> np.ndarray:
         t = Q_T.shape[1]
 
     # Initialize the numpy array
-    Z = np.array([[]])
+    Z = np.array([])
     Z = Z.reshape(0, A.shape[1])
-
+    
     # Loop over the individuals, and permutate their values.
     for i in range(int(A.shape[0]/t)):
         Z = np.vstack((Z, Q_T@A[i*t: (i + 1)*t]))
